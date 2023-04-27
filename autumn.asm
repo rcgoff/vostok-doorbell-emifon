@@ -1,4 +1,33 @@
-
+        db      88h
+        db      28h
+        db      81h
+        db      10h
+        db      08h
+        db      0E1h
+        db      30h
+        db      05h
+        db      0FFh
+        db      24h
+        db      27h
+        db      2Ah
+        db      31h
+        db      2Ch
+        db      2Ah
+        db      0FFh
+        db      8Ch
+        db      2Ch
+        db      61h
+        db      50h
+        db      0FFh
+        db      2Dh
+        db      21h
+        db      25h
+        db      2Ch
+        db      2Ah
+        db      28h
+        db      0FFh
+        db      0E7h
+        db      50h
         db      4Ah
         db      4Ch
         db      31h
