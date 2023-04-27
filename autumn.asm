@@ -1,3 +1,39 @@
+       db      4Ah
+       db      4Ch
+       db      31h
+       db      74h
+       db      14h
+       db      0Ah
+       db      08h
+       db      07h
+       db      88h
+       db      07h
+       db      08h
+       db      65h
+       db      05h
+       db      30h
+       db      0Fh
+       db      2Dh
+       db      2Ah
+       db      31h
+       db      35h
+       db      9Ch
+       db      1Ah
+       db      18h
+       db      77h
+       db      17h
+       db      14h
+       db      15h
+       db      17h
+       db      74h
+       db      50h
+       db      0Ch
+       db      97h
+       db      15h
+       db      0Ch
+       db      97h
+       db      15h
+       db      0Ch
        db      51h
        db      5Ch
        db      3Ah
