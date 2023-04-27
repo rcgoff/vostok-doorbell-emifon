@@ -1,3 +1,4 @@
+
         db      4Ah
         db      4Ch
         db      31h
@@ -11,10 +12,14 @@
         db      0E5h
         db      30h
         db      0Fh
+        db      0FFh
         db      2Dh
+        db      21h
+        db      25h
         db      2Ah
         db      31h
         db      35h
+        db      0FFh
         db      9Ch
         db      1Ah
         db      18h
@@ -34,7 +39,7 @@
         db      51h
         db      5Ch
         db      3Ah
-        db      94h
+        db      74h
         db      50h
         db      0Ch
         db      77h
