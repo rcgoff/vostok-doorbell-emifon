@@ -260,26 +260,25 @@ NXNOTE:anl     p2,#0f0h        ; 0077 - 9a f0
 
 
 ;--------------table for duration=0 (1/16)
+DUR0:
        db      17h             ; 0080 - 17
        db      11h             ; 0081 - 11
        db      00h             ; 0082 - 00
 
 ;---------------------------------------------tone duration table, has 8 possible entries
 ;---------------------------------------------contains start addreses
-       org     083h
 DURADDR:
-       db      80h             ; 0083 - 0, total duration (1+1)=2                      1/16
-       db      8bh             ; 0084 - 1, total duration (1+1+1+1)=4                  1/8
-       db      90h             ; 0085 - 2, total duration (1+1+1+1+1+1)=6              1/8 dotted
-       db      98h             ; 0086 - 3, total duration (3+1+1+1+1+1+1)=9            1/4
-       db      0a0h            ; 0087 - 4, total duration (b+1+1+1+1+1+1)=17           1/4 dotted
-       db      0a8h            ; 0088 - 5, total duration (7+3*6)=25                   1/2
-       db      0b0h            ; 0089 - 6, total duration (7*6)=42                     1/2 dotted
-       db      0b8h            ; 008a - 7, total duration (f+7*6)=255+42=297           long pause? (not used)
+       db      DUR0            ; 0083 - 0, total duration (1+1)=2                      1/16
+       db      DUR1            ; 0084 - 1, total duration (1+1+1+1)=4                  1/8
+       db      DUR2            ; 0085 - 2, total duration (1+1+1+1+1+1)=6              1/8 dotted
+       db      DUR3            ; 0086 - 3, total duration (3+1+1+1+1+1+1)=9            1/4
+       db      DUR4            ; 0087 - 4, total duration (b+1+1+1+1+1+1)=17           1/4 dotted
+       db      DUR5            ; 0088 - 5, total duration (7+3*6)=25                   1/2
+       db      DUR6            ; 0089 - 6, total duration (7*6)=42                     1/2 dotted
+       db      DUR7            ; 008a - 7, total duration (f+7*6)=255+42=297           long pause? (not used)
 
 ;--------------table for duration=1 (1/8)
-       org     08bh
-
+DUR1:
        db      17h             ; 008b - 17
        db      15h             ; 008c - 15
        db      13h             ; 008d - 13
@@ -287,6 +286,7 @@ DURADDR:
        db      00h             ; 008f - 00
 
 ;--------------table for duration=2 (1/8 dotted)
+DUR2:
        db      17h             ; 0090 - 17
        db      16h             ; 0091 - 16
        db      15h             ;        15
@@ -297,6 +297,7 @@ DURADDR:
        db      00h             ; 0097 - 00                           ;this is redundant, previous zero leads to stop
 
 ;--------------table for duration=3 (1/4)
+DUR3:
        db      37h             ; 0098 - 37           (0011.0111)
        db      16h             ; 0099 - 16           (0001.0110)
        db      15h             ;        15           (0001.0101)
@@ -307,6 +308,7 @@ DURADDR:
        db      00h             ; 009f - 00
 
 ;--------------table for duration=4 (1/4 dotted)
+DUR4:
        db      0b7h            ; 00a0 - b7
        db      16h             ; 00a1 - 16
        db      15h             ;        15
@@ -317,6 +319,7 @@ DURADDR:
        db      00h             ; 00a7 - 00
 
 ;--------------table for duration=5 (1/2)
+DUR5:
        db      77h             ; 00a8 - 77
        db      36h             ; 00a9 - 36
        db      35h             ;        35
@@ -327,6 +330,7 @@ DURADDR:
        db      00h             ; 00af - 00
 
 ;--------------table for duration=6 (1/2 dotted)
+DUR6:
        db      77h             ; 00b0 - 77
        db      76h             ; 00b1 - 76
        db      74h             ;        74
@@ -337,6 +341,7 @@ DURADDR:
        db      00h             ; 00b7 - 00                           ;this is redundant, previous zero leads to stop
 
 ;--------------table for duration=7 (long note)
+DUR7:
        db      0f7h            ; 00b8 - f7
        db      76h             ; 00b9 - 76
        db      75h             ;        75
@@ -353,74 +358,74 @@ DURADDR:
        org     0c0h
 TONETAB:
        db      00h
-       db      0adh           ;01=1.do
-       db      0a2h           ;02=1.do#
-       db      95h            ;03=1.re
-       db      8bh            ;04=1.re#
-       db      81h            ;05=1.mi
-       db      77h            ;06=1.fa
-       db      6eh            ;07=1.fa#
-       db      66h            ;08=1.sol
-       db      5eh            ;09=1.sol#
-       db      56h            ;0a=1.la
-       db      4fh            ;0b=1.la#
-       db      49h            ;0c=1.si
-       db      0d5h           ;0d=small.la
-       db      0c7h           ;0e=small.la#
-       db      0b9h           ;0f=small.si
+       db      0adh            ;01=1.do
+       db      0a2h            ;02=1.do#
+       db      95h             ;03=1.re
+       db      8bh             ;04=1.re#
+       db      81h             ;05=1.mi
+       db      77h             ;06=1.fa
+       db      6eh             ;07=1.fa#
+       db      66h             ;08=1.sol
+       db      5eh             ;09=1.sol#
+       db      56h             ;0a=1.la
+       db      4fh             ;0b=1.la#
+       db      49h             ;0c=1.si
+       db      0d5h            ;0d=small.la
+       db      0c7h            ;0e=small.la#
+       db      0b9h            ;0f=small.si
        db      00h
-       db      43h            ;11=2.do
-       db      3dh            ;12=2.do#
-       db      37h            ;13=2.re
-       db      32h            ;14=2.re#
-       db      2eh            ;15=2.mi
-       db      28h            ;16=2.fa
-       db      23h            ;17=2.fa#
-       db      1fh            ;18=2.sol
-       db      1bh            ;19=2.sol#
-       db      17h            ;1a=2.la
-       db      14h            ;1b=2.la#
-       db      11h            ;1c=2.si
+       db      43h             ;11=2.do
+       db      3dh             ;12=2.do#
+       db      37h             ;13=2.re
+       db      32h             ;14=2.re#
+       db      2eh             ;15=2.mi
+       db      28h             ;16=2.fa
+       db      23h             ;17=2.fa#
+       db      1fh             ;18=2.sol
+       db      1bh             ;19=2.sol#
+       db      17h             ;1a=2.la
+       db      14h             ;1b=2.la#
+       db      11h             ;1c=2.si
        db      00h
 
 
 ;------------------------------------------------------table of start addreses of tunes
        org     0e0h
 ;tune set A
-       db      03h             ; 00e0 - 03                           ;tune 1a
-       db      0dh             ; 00e1 - 0d                           ;tune 2a
-       db      19h             ; 00e2 - 19                           ;tune 3a
-       db      24h             ; 00e3 - 24                           ;tune 4a
-       db      2eh             ; 00e0 - 2e                           ;tune 5a
-       db      41h             ; 00e5 - 41                           ;tune 6a
-       db      4eh             ; 00e6 - 4e                           ;tune 7a
-       db      5ch             ; 00e7 - 5c                           ;tune 8a
-       db      6bh             ; 00e8 - 6b                           ;tune 9a
-       db      7ch             ; 00e9 - 7c                           ;tune 10a
-       db      87h             ; 00ea - 87                           ;tune 11a
-       db      93h             ; 00eb - 93                           ;tune 12a
-       db      0a0h            ; 00ec - a0                           ;tune 13a
-       db      0b1h            ; 00ed - b1                           ;tune 14a
-       db      0c5h            ; 00ee-  c5                           ;tune 15a
-       db      0dah            ; 00ef - da                           ;tune 16a
+       db      tune1a mod 100h    ; 00e0 - 03
+       db      tune2a mod 100h    ; 00e1 - 0d
+       db      tune3a mod 100h    ; 00e2 - 19
+       db      tune4a mod 100h    ; 00e3 - 24
+       db      tune5a mod 100h    ; 00e0 - 2e
+       db      tune6a mod 100h    ; 00e5 - 41
+       db      tune7a mod 100h    ; 00e6 - 4e
+       db      tune8a mod 100h    ; 00e7 - 5c
+       db      tune9a mod 100h    ; 00e8 - 6b
+       db      tune10a mod 100h   ; 00e9 - 7c
+       db      tune11a mod 100h   ; 00ea - 87
+       db      tune12a mod 100h   ; 00eb - 93
+       db      tune13a mod 100h   ; 00ec - a0
+       db      tune14a mod 100h   ; 00ed - b1
+       db      tune15a mod 100h   ; 00ee-  c5
+       db      tune16a mod 100h   ; 00ef - da
 
 ;tune set B
-       db      00h             ; 00f0 - 00                           ;tune 1b
-       db      0ch             ; 00f1 - 0c                           ;tune 2b
-       db      16h             ; 00f2 - 16                           ;tune 3b
-       db      21h             ; 00f3 - 21                           ;tune 4b
-       db      2dh             ; 00f4 - 2d                           ;tune 5b
-       db      3ah             ; 00f5 - 3a                           ;tune 6b
-       db      49h             ; 00f6 - 49                           ;tune 7b
-       db      59h             ; 00f7 - 59                           ;tune 8b
-       db      69h             ; 00f8 - 69                           ;tune 9b
-       db      7dh             ; 00f9 - 7d                           ;tune 10b
-       db      8ah             ; 00fa - 8a                           ;tune 11b
-       db      0a6h            ; 00fb - a6                           ;tune 12b
-       db      0b3h            ; 00fc - b3                           ;tune 13b
-       db      0c2h            ; 00fd - c2                           ;tune 14b
-       db      0d8h            ; 00fe - d8                           ;tune 15b
-       db      0efh            ; 00ff - ef                           ;tune 16b
+       db      tune1b mod 100h    ; 00f0 - 00
+       db      tune2b mod 100h    ; 00f1 - 0c
+       db      tune3b mod 100h    ; 00f2 - 16
+       db      tune4b mod 100h    ; 00f3 - 21
+       db      tune5b mod 100h    ; 00f4 - 2d
+       db      tune6b mod 100h    ; 00f5 - 3a
+       db      tune7b mod 100h    ; 00f6 - 49
+       db      tune8b mod 100h    ; 00f7 - 59
+       db      tune9b mod 100h    ; 00f8 - 69
+       db      tune10b mod 100h   ; 00f9 - 7d
+       db      tune11b mod 100h   ; 00fa - 8a
+       db      tune12b mod 100h   ; 00fb - a6
+       db      tune13b mod 100h   ; 00fc - b3
+       db      tune14b mod 100h   ; 00fd - c2
+       db      tune15b mod 100h   ; 00fe - d8
+       db      tune16b mod 100h   ; 00ff - ef
 
 
 ;INIT---------------------------------------------------------------------power-on initialisation
