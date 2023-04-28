@@ -47,7 +47,7 @@ X0015:	mov	a,r1		; 0015 - f9	y
 	movp	a,@a		; 001d - a3	#
 	jmp	X003d		; 001e - 04 3d	.=
 ;
-X0020:	nop			; 0020 - 00	.	; data truncated
+X0020:	db	0,0,0,0,0	; 0020 - 00	.	; data truncated
 ;
 	org	25h
 ;
@@ -196,7 +196,7 @@ X00cc:	mov	r1,#0eh		; 00cc - b9 0e	9.
 	anl	a,@r1		; 00d5 - 51	Q
 	mov	t,a		; 00d6 - 62	b
 	anl	a,@r1		; 00d7 - 51	Q
-	jmp	X0451		; 00d8 - 84 51	.Q
+	dw	5184h		; 00d8 - 84 51	.Q
 ;
 	mov	t,a		; 00da - 62	b
 	anl	a,@r1		; 00db - 51	Q
@@ -222,7 +222,7 @@ X00cc:	mov	r1,#0eh		; 00cc - b9 0e	9.
 	outl	bus,a		; 00ec - 02	.
 	inc	r2		; 00ed - 1a	.
 	inc	r3		; 00ee - 1b	.
-	idl			; 00ef - 01	.---------------------insane code again, table continues here!
+	db	01h		; 00ef - 01     .---------------------insane code again, table continues here!
 	movd	a,p5		; 00f0 - 0d	.
 	movd	a,p6		; 00f1 - 0e	.
 	movd	a,p7		; 00f2 - 0f	.
@@ -235,7 +235,7 @@ X00cc:	mov	r1,#0eh		; 00cc - b9 0e	9.
 	inc	a		; 00f9 - 17	.
 	jtf	X0015		; 00fa - 16 15	..
 	call	X0011		; 00fc - 14 11	..
-	jb0	X0013		; 00fe - 12 13	..
+	dw	1312h		; 00fe - 12 13	..
 ;--------------------------------------------------------------------end of table (?)
 
 X0100:	mov	a,r1		; 0100 - f9	y
@@ -333,126 +333,146 @@ X016b:	mov	a,r3		; 016b - fb	{
 	jmp	X010f		; 0170 - 24 0f	$.
 ;
 X0172:	jmp	X0200		; 0172 - 44 00	D.
+	db	0,0,0,0
 ;
 	org	178h
 ;---------------------------------------duration table index(8 entries) - absolutely identical to table at DOORBELL at 083h-0b8h
-	; 0178 - 80	.
-	; 0179 - 8b	.
-	; 017a - 90	.
- 	; 017b - 98
-	; 017c - a0	. 
-	; 017d - a8	(
- 	; 017e - b0 
-	; 017f - b8	08
+DURADDR:
+	db	DUR0 mod 100h	; 0178 - 80     .
+	db	DUR1 mod 100h	; 0179 - 8b     .
+	db	DUR2 mod 100h	; 017a - 90     .
+	db	DUR3 mod 100h	; 017b - 98
+	db	DUR4 mod 100h	; 017c - a0     .
+	db	DUR5 mod 100h	; 017d - a8     (
+	db	DUR6 mod 100h	; 017e - b0
+	db	DUR7 mod 100h	; 017f - b8     08
 
 ;---------------------------------------duration tables below are different from DOORBELL values
-;=--------------------------------------duration table for 80h
-	; 0180 - e3	c
-	; 0181 - 23 00	#.
-	; 0183 - c7	G
-	; 0184 - a7	'
-	; 0185 - 87	.
-	; 0186 - 67	g
-	; 0187 - 47	G
-	; 0188 - 27	'
-	; 0189 - 00	.	; data truncated
- 
+;---------------------------------------duration table for 80h
+DUR0:
+	db	0e3h		; 0180 - e3     c
+	db	23h
+	db	00h		; 0181 - 23 00  #.
+	db	0c7h		; 0183 - c7     G
+	db	0a7h		; 0184 - a7     '
+	db	87h		; 0185 - 87     .
+	db	67h		; 0186 - 67     g
+	db	47h		; 0187 - 47     G
+	db	27h		; 0188 - 27     '
+	db	00h		; 0189 - 00     .       ; data truncated
+	db	00h
+
 
 ;---------------------------------------duration table for 8bh
-	; 018b - e3	c
-	; 018c - a3	#
-	; 018d - 63	c
-	; 018e - 23 00	#.
+DUR1:
+	db	0e3h		; 018b - e3     c
+	db	0a3h		; 018c - a3     #
+	db	63h		; 018d - 63     c
+	db	23h
+	db	00h		; 018e - 23 00  #.
 
 ;---------------------------------------duration table for 90h
-
-	; 0190 - e3	c
-	; 0191 - c3	C
-	; 0192 - a3	#
-	; 0193 - 83	.
-	; 0194 - 63	c
-	; 0195 - 23 00	#.
-	; 0197 - 00	.
+DUR2:
+	db	0e3h		; 0190 - e3     c
+	db	0c3h		; 0191 - c3     C
+	db	0a3h		; 0192 - a3     #
+	db	83h		; 0193 - 83     .
+	db	63h		; 0194 - 63     c
+	db	23h
+	db	00h		; 0195 - 23 00  #.
+	db	00h		; 0197 - 00     .
 
 ;---------------------------------------duration table for 98h
-	; 0198 - e7	g
-	; 0199 - c3	C
-	; 019a - a3	#
-	; 019b - 83	.
-	; 019c - 63	c
-	; 019d - 43 23	C#
-	; 019f - 00	.
+DUR3:
+	db	0e7h		; 0198 - e7     g
+	db	0c3h		; 0199 - c3     C
+	db	0a3h		; 019a - a3     #
+	db	83h		; 019b - 83     .
+	db	63h		; 019c - 63     c
+	db	43h
+	db	23h		; 019d - 43 23  C#
+	db	00h		; 019f - 00     .
 
 ;---------------------------------------duration table for a0h
-	; 01a0 - f8	x
-	; 01a1 - c3	C
-	; 01a2 - a3	#
-	; 01a3 - 83	.
-	; 01a4 - 63	c
-	; 01a5 - 43 23	C#
-	; 01a7 - 00	.
+DUR4:
+	db	0f8h	; 01a0 - f8     x
+	db	0c3h	; 01a1 - c3     C
+	db	0a3h	; 01a2 - a3     #
+	db	83h	; 01a3 - 83     .
+	db	63h	; 01a4 - 63     c
+	db	43h
+	db	23h	; 01a5 - 43 23  C#
+	db	00h	; 01a7 - 00     .
 
 ;;---------------------------------------duration table for a8h
-	; 01a8 - ef c7	oG
-	; 01aa - a7	'
-	; 01ab - 87	.
-	; 01ac - 67	g
-	; 01ad - 47	G
-	; 01ae - 27	'
-	; 01af - 00	.
+DUR5:
+	db	0efh
+	db	0c7h	; 01a8 - ef c7  oG
+	db	0a7h	; 01aa - a7     '
+	db	87h	; 01ab - 87     .
+	db	67h	; 01ac - 67     g
+	db	47h	; 01ad - 47     G
+	db	27h	; 01ae - 27     '
+	db	00h	; 01af - 00     .
 
 ;---------------------------------------duration table for b0h
-	; 01b0 - ef cf	oO
-	; 01b2 - 8f	.
-	; 01b3 - 6f	o
-	; 01b4 - 4f	O
-	; 01b5 - 2f	/
-	; 01b6 - 00	.	; data truncated
-;
+DUR6:
+	db	0efh
+	db	0cfh	; 01b0 - ef cf  oO
+	db	8fh	; 01b2 - 8f     .
+	db	6fh	; 01b3 - 6f     o
+	db	4fh	; 01b4 - 4f     O
+	db	2fh	; 01b5 - 2f     /
+	db	00h	; 01b6 - 00     .       ; data truncated
+	db	00h
 
 ;---------------------------------------duration table for b8h
+DUR7:
+	db	0ffh	; 01b8 - ff
+	db	0cfh	; 01b9 - cf     O
+	db	0afh	; 01ba - af     /
+	db	8fh	; 01bb - 8f     .
+	db	6fh	; 01bc - 6f     o
+	db	4fh	; 01bd - 4f     O
+	db	2fh	; 01be - 2f     /
+	db	00h	; 01bf - 00     .       ; data truncated
 
-;
-	; 01b9 - cf	O
-	; 01ba - af	/
-	; 01bb - 8f	.
-	; 01bc - 6f	o
-	; 01bd - 4f	O
-	; 01be - 2f	/
-	; 01bf - 00	.	; data truncated
-;
 
-;---------------------------------------------------tone freq table (absolutely identical to table at DOORBELL at 0c0-0dd)
-	; 01c0 - 00
-	; 01c1 - ad	-;
-	; 01c2 - a2	";
-	; 01c3 - 95	.;
-	; 01c4 - 8b	.;
-	; 01c5 - 81	.
-	; 01c6 - 77	w
- 	; 01c7 - 6e	n
-	; 01c8 - 66	f
-	; 01c9 - 5e	^
-	; 01ca - 56
-	; 01cb - 4f	VO
-	; 01cc - 49	I
-	; 01cd - d5	U
-	; 01ce - c7	G
- 	; 01cf - b9
-	; 01d0 - 00	9.
-	; 01d1 - 43
-	; 01d2 - 3d	C=
-	; 01d3 - 37	7
-	; 01d4 - 32
-	; 01d5 - 2e	2.
-	; 01d6 - 28	(
-	; 01d7 - 23
-	; 01d8 - 1f	#.
-	; 01d9 - 1b	.
-	; 01da - 17	.
-	; 01db - 14
-	; 01dc - 11	..
-	; 01dd - 00	.	; data truncated
+;-----------------------------------------------------musical tones table (absolutely identical to table at DOORBELL at 0c0-0dd)
+;-----------------------------------------------------the higher the address, the higher the tone and the lower the value
+;-----------------------------------------------------seems to me, 0d,0e,0f are 'small octave' values, becuse they has lowest values
+	org     1c0h
+TONETAB:
+	db	00h
+	db	0adh	;01=1.do
+	db	0a2h	;02=1.do#
+	db	95h	;03=1.re
+	db	8bh	;04=1.re#
+	db	81h	;05=1.mi
+	db	77h	;06=1.fa
+	db	6eh	;07=1.fa#
+	db	66h	;08=1.sol
+	db	5eh	;09=1.sol#
+	db	56h	;0a=1.la
+	db	4fh	;0b=1.la#
+	db	49h	;0c=1.si
+	db	0d5h	;0d=small.la
+	db	0c7h	;0e=small.la#
+	db	0b9h	;0f=small.si
+	db	00h
+	db	43h	;11=2.do
+	db	3dh	;12=2.do#
+	db	37h	;13=2.re
+	db	32h	;14=2.re#
+	db	2eh	;15=2.mi
+	db	28h	;16=2.fa
+	db	23h	;17=2.fa#
+	db	1fh	;18=2.sol
+	db	1bh	;19=2.sol#
+	db	17h	;1a=2.la
+	db	14h	;1b=2.la#
+	db	11h	;1c=2.si
+	db	00h
 ;--------------------------------------------------------
 ;
 	org	1e0h
@@ -478,6 +498,8 @@ X0172:	jmp	X0200		; 0172 - 44 00	D.
 org	1eeh						;
 	db	02h		; 01ee - 02	.	;0eh	- 0.la# - Krylatye kacheli   (this is left-most black key, 1st tune, but last table entry!)
 							; 	- 0.si and all notes in 2nd octave are beeps (00h)
+
+	db	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 ;-------------------------------------------------------------------------
 ;
 	org	200h
@@ -568,6 +590,7 @@ X0260:	nop			; 0260 - 00	.
         nop			; 0261 - 00     .
         nop			; 0262 - 00     .
 	jmp	X000a		; 0263 - 04 0a	..
+	db	0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
 ;
 	org	26eh
 ;
@@ -621,7 +644,7 @@ X02aa:	dec	a		; 02aa - 07	.
 	jnz	X02aa		; 02ab - 96 aa	.*
 	djnz	r1,X02a8	; 02ad - e9 a8	i(
 	jmp	X014d		; 02af - 24 4d	$M
------------------------------------------------------------------
+;-----------------------------------------------------------------
 ;
 X02b1:	mov	a,r0		; 02b1 - f8	x
 	add	a,#0c1h		; 02b2 - 03 c1	.A
@@ -692,7 +715,7 @@ X02fc:	mov	r0,#9		; 02fc - b8 09	8.
 
 ;------02h----Krylatye kacheli				;listing in this col is erroneous		
 	db	65h,72h,'2'+80h				; 0300 ..er223r
-	db	32h,33h,72h,','+80h,6ch			; 0308 ,l70754U
+	db	32h,33h,72h,0ach,6ch			; 0308 ,l70754U
 	db	'7'+80h,30h,37h,35h,34h			; 0310 j:0:86v5
 	db	'U'+80h,6ah,':'+80h			; 0318 u757ijP.
 	db	30h,3ah,38h,36h,76h,'5'+80h		; 0320 K.hdac$p
