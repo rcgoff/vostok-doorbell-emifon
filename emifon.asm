@@ -483,20 +483,20 @@ TONETAB:
 ;don't undesrtand value at offset 00h, this note was undefined in doorbell
 							;offset----note--------tune
 	in	a,p1		; 01e0 - 09	.	;00h-----------------------------------------?????unknown note????----????not a tune address???
-	db	00h		; 01e1 - 00		;01h	- 1.do  - beep
-	db	20h		; 01e2 - 20  . 		;02h	- 1.do# - Ya na solnyshke lezhu
-	db	00h		; 01e3 - 00		;03h	- 1.re  - beep
-	db	3fh		; 01e4 - 3f  .?		;04h 	- 1.re# - Pust vsegda budet solntse
-	db	00h		; 01e5 - 00		;05h	- 1.mi	- beep
-	db	00h		; 01e6 - 00 		;06h	- 1.fa	- beep
-	db	5ch		; 01e6 - 5c  .\		;07h	- 1.fa# - Goluboi vagon
-	db	00h		; 01e8 - 00 		;08h	- 1.sol - beep
-	db	89h		; 01e9 - 89  ..		;09h	- 1.sol#- Vmeste veselo shagat
-	db	00h		; 01ea - 00		;0ah	- 1.la	- beep
-	db	0b1h		; 01eb - b1  .1		;0bh	- 1.la# - Bremenskiye muzykanty
+	db	TUNE0 mod 100h	; 01e1 - 00		;01h	- 1.do  - beep
+	db	TUNE2 mod 100h	; 01e2 - 20  . 		;02h	- 1.do# - Ya na solnyshke lezhu
+	db	TUNE0 mod 100h	; 01e3 - 00		;03h	- 1.re  - beep
+	db	TUNE3 mod 100h	; 01e4 - 3f  .?		;04h 	- 1.re# - Pust vsegda budet solntse
+	db	TUNE0 mod 100h	; 01e5 - 00		;05h	- 1.mi	- beep
+	db	TUNE0 mod 100h	; 01e6 - 00 		;06h	- 1.fa	- beep
+	db	TUNE4 mod 100h	; 01e6 - 5c  .\		;07h	- 1.fa# - Goluboi vagon
+	db	TUNE0 mod 100h	; 01e8 - 00 		;08h	- 1.sol - beep
+	db	TUNE5 mod 100h	; 01e9 - 89  ..		;09h	- 1.sol#- Vmeste veselo shagat
+	db	TUNE0 mod 100h	; 01ea - 00		;0ah	- 1.la	- beep
+	db	TUNE6 mod 100h	; 01eb - b1  .1		;0bh	- 1.la# - Bremenskiye muzykanty
 							;	- 1.si, 0.la -beep
 org	1eeh						;
-	db	02h		; 01ee - 02	.	;0eh	- 0.la# - Krylatye kacheli   (this is left-most black key, 1st tune, but last table entry!)
+	db	TUNE1 mod 100h	; 01ee - 02	.	;0eh	- 0.la# - Krylatye kacheli   (this is left-most black key, 1st tune, but last table entry!)
 							; 	- 0.si and all notes in 2nd octave are beeps (00h)
 
 	db	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -708,67 +708,7 @@ X02fc:	mov	r0,#9		; 02fc - b8 09	8.
 
 
 ;-----------------------------------------------------------------------------------------tunes
-;tune ending marker is d0h 00h, in this disassembler notation: 'P'+80h,0
-
-;------00h----beep					 
-	db	1ah,0
-
-;------02h----Krylatye kacheli				;listing in this col is erroneous		
-	db	65h,72h,'2'+80h				; 0300 ..er223r
-	db	32h,33h,72h,0ach,6ch			; 0308 ,l70754U
-	db	'7'+80h,30h,37h,35h,34h			; 0310 j:0:86v5
-	db	'U'+80h,6ah,':'+80h			; 0318 u757ijP.
-	db	30h,3ah,38h,36h,76h,'5'+80h		; 0320 K.hdac$p
-	db	75h,37h,35h,'7'+80h,69h			; 0328 K.hdac$p
-	db	'j'+80h,'P'+80h,0			; 0330 H.FF.DF.
-
-;------20h-----Ya na solnyshke
-	db	4bh,9,68h,64h,61h,63h,'$'+80h		; 0338 ifki(P.c
-	db	70h,4bh,9,68h,64h,61h,63h,'$'+80h	; 0340 c(jljhcc
-	db	70h,48h,0bh,'F'+80h,46h			; 0348 (jlljcc*
-	db	0bh,'D'+80h,46h,8,69h			; 0350 lqsjjl1l
-	db	66h,6bh,69h,'('+80h,'P'+80h,0		; 0358 j(P.%*)*
-
-;------3fh-----Pust vsegda budet solntse
-	db	63h,63h,'('+80h,6ah			; 0360 ,*(*hffp
-	db	6ch,6ah,68h,63h,63h,'('+80h		; 0368 #('(*(#&
-	db	6ah,6ch,6ch,6ah,63h,63h,'*'+80h		; 0370 %0%*)*,*
-	db	6ch,71h,73h,6ah,6ah,6ch,'1'+80h		; 0378 (&ecjp%1
-	db	6ch,6ah,'('+80h,'P'+80h,0		; 0380 ,*)*,)*P
-
-;------5ch-----Goluboi vagon
-	db	25h,2ah,29h,2ah,2ch,2ah,28h		; 0388 .*)K.*&c
-	db	2ah,68h,66h,66h,70h,23h,28h,27h		; 0390 #%c"#%c"
-	db	28h,2ah,28h,23h,26h,'%'+80h		; 0398 #%h&*)K.
-	db	'0'+80h,25h,2ah,29h,2ah			; 03a0 *&c&*q++
-	db	2ch,2ah,28h,26h,65h,63h,6ah,70h		; 03a8 1k*%&e#P
-	db	25h,31h,2ch,2ah,29h,2ah,2ch,29h		; 03b0 .!!!#%%!
-	db	'*'+80h,'P'+80h,0			; 03b8 %hehp&&&
-
-;------89h-----Vmeste veselo shagat
-	db	2ah,29h,4bh,0ah,2ah,26h,63h		; 03c0 %##&*hfh
-	db	23h,25h,63h,'"'+80h,23h			; 03c8 p.%he***
-	db	25h,63h,'"'+80h,23h,25h			; 03d0 ,qj3331,
-	db	68h,'&'+80h,2ah,29h,4bh			; 03d8 (,3qljp.
-	db	0ah,2ah,26h,63h,26h,2ah,71h,'+'+80h	; 03e0 (jqljls5
-	db	2bh,31h,6bh,'*'+80h,25h			; 03e8 3qP.....
-	db	26h,65h,'#'+80h,'P'+80h,0		; 03f0 ........
-
-;------0b1h----Bremenskiye muzykanty
-	db	21h,21h,21h,23h,25h,25h,21h		; 03f8 ........
-	db	25h,68h,65h,68h,70h,26h,26h,26h		; 
-	db	25h,23h,23h,26h,2ah,68h,66h,68h		; 
-	db	70h,85h,25h,68h,65h,2ah,2ah,2ah		; 
-	db	2ch,71h,6ah,33h,33h,33h,31h,2ch		;  
-	db	28h,2ch,33h,71h,6ch,6ah,70h,86h		; 
-	db	28h,6ah,71h,6ch,6ah,6ch,73h,35h		;  
-	db	33h,71h,'P'+80h,0,0
-;----------------------------------------------------------------------last 0d19 bytes are 0ffh
-	db	0ffh,0ffh,0ffh				; 0430 
-	db	0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	; 0438 
-	db	0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	; 0440 
+INCLUDE "TUNES-EM.ASM"
 
 
 	end
-;
-
