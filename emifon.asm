@@ -265,17 +265,17 @@ X0118: jz      X012c           ; 0118 - c6 2c  F,      ;x012c - end of playing (
 ;--------------------------note code parser (same as PG2GET in DOORBELL)
 X011a: mov     r1,a            ; 011a - a9     )
        anl     a,#1fh          ; 011b - 53 1f  S.
-       orl     a,#0c0h         ; 011d - 43 c0  C@      ;1c0h is address of tone table (not 0c0h, remember that now we're at 1st page!)
+       orl     a,#TONETAB mod 100h      ; 011d - 43 c0  C@
        movp    a,@a            ; 011f - a3     #
        mov     r5,a            ; 0120 - ad     -
        mov     a,r1            ; 0121 - f9     y
        anl     a,#0e0h         ; 0122 - 53 e0  S`
        rr      a               ; 0124 - 77     w
        swap    a               ; 0125 - 47     G
-       add     a,#78h          ; 0126 - 03 78  .x      ;178h is address of note duration table (not 078h, remember that now we're at 1st page!)
+       add     a,#DURADDR mod 100h      ; 0126 - 03 78  .x
        movp    a,@a            ; 0128 - a3     #
        mov     r7,a            ; 0129 - af     /
-       jmp     X02a2           ; 012a - 44 a2  D"
+       jmp     X02a2           ; 012a - 44 a2  D"      ;return to x014d
 ;
 ;(x02a2 is something like DELAY in DOORBELL and after it jumps to X014d)
 ;
@@ -303,23 +303,23 @@ X0147: mov     r1,#8           ; 0147 - b9 08  9.
        mov     a,@r1           ; 0149 - f1     q
        jnz     X0164           ; 014a - 96 64  .d
        inc     r7              ; 014c - 1f     .
-X014d: mov     a,r7            ; 014d - ff     .
-       movp    a,@a            ; 014e - a3     #
-X014f: jz      X0166           ; 014f - c6 66  Ff
-       mov     r1,a            ; 0151 - a9     )
+X014d: mov     a,r7            ; 014d - ff     .       ;here we after x02a2 delay after note parse
+       movp    a,@a            ; 014e - a3     #       ;read next duration table value
+X014f: jz      X0166           ; 014f - c6 66  Ff      ;next note if 0
+       mov     r1,a            ; 0151 - a9     )       ;backup
        rr      a               ; 0152 - 77     w
-       swap    a               ; 0153 - 47     G
-       anl     a,#7            ; 0154 - 53 07  S.
+       swap    a               ; 0153 - 47     G       
+       anl     a,#7            ; 0154 - 53 07  S.      ;put bits 7,6,5 of duration value to 2,1,0
        xch     a,r3            ; 0156 - 2b     +
        anl     a,#0f8h         ; 0157 - 53 f8  Sx
        orl     a,r3            ; 0159 - 4b     K
        mov     r3,a            ; 015a - ab     +
-       mov     a,r1            ; 015b - f9     y
-       anl     a,#1fh          ; 015c - 53 1f  S.
+       mov     a,r1            ; 015b - f9     y       ;restore
+       anl     a,#1fh          ; 015c - 53 1f  S.      ;bits 4..0 of duration value
        mov     r1,#8           ; 015e - b9 08  9.
-       mov     @r1,a           ; 0160 - a1     !
+       mov     @r1,a           ; 0160 - a1     !       ;store it in RAM @r0 of register bank 1 (@08h)
        clr     f1              ; 0161 - a5     %
-       jmp     X02d1           ; 0162 - 44 d1  DQ
+       jmp     X02d1           ; 0162 - 44 d1  DQ      ;jump to tome player (TMRTON) @0243
 ;
 X0164: jmp     X02c2           ; 0164 - 44 c2  DB
 ;
@@ -352,7 +352,7 @@ DURADDR:
 DUR0:
        db      0e3h            ; 0180 - e3     c
        db      23h
-       db      00h             ; 0181 - 23 00  #.
+       db      00h             ; 0181 - 23 00  #.      ;???? it will lead to stop reading duration info
        db      0c7h            ; 0183 - c7     G
        db      0a7h            ; 0184 - a7     '
        db      87h             ; 0185 - 87     .
@@ -554,17 +554,14 @@ X023a: mov     a,r4            ; 023a - fc     |
        jmp     X0277           ; 023d - 44 77  Dw
 ;
        org     242h
-;
-X0242: nop                     ; 0242 - 00     .
-
-
 ;-----------------------------------------------------------
 ;TONE player
 ;------------very similar to tone processing in DOORBELL
 ;------------but little bit DIFFERENT! from 024d.
 ;------------namely, don't read port but use R3
 ;------------algorithm is quite the same.
-TMRTON:        mov     a,#5dh          ; 0243 - 23 5d  #]
+TMRTON:nop                     ; 0242 - 00     .
+       mov     a,#5dh          ; 0243 - 23 5d  #]
        mov     t,a             ; 0245 - 62     b
        strt    t               ; 0246 - 55     U
 TONE:  mov     a,r5            ; 0247 - fd     }
@@ -573,7 +570,7 @@ TONLP: dec     a               ; 024a - 07     .
        jnz     TONLP           ; 024b - 96 4a  .J
        mov     a,#8            ; 024d - 23 08  #.
        xrl     a,r3            ; 024f - db     [       ;invert bit 3 in r3
-TMRCHK:        mov     r3,a            ; 0250 - ab     +
+TMRCHK:mov     r3,a            ; 0250 - ab     +
        outl    p2,a            ; 0251 - 3a     :       ;output r3 to port 2 (with inverted bit 3 if it isn't pause)
        jtf     X0260           ; 0252 - 16 60  .`      ;leave tone player after timer overflow
        mov     a,#23h          ; 0254 - 23 23  ##
@@ -587,8 +584,8 @@ MUSPAUSE:
 ;----------------------------------------------------------------
 
 X0260: nop                     ; 0260 - 00     .       
-        nop                    ; 0261 - 00     .
-        nop                    ; 0262 - 00     .
+       nop                     ; 0261 - 00     .
+       nop                     ; 0262 - 00     .
        jmp     X000a           ; 0263 - 04 0a  ..
        db      0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
 ;
@@ -634,14 +631,14 @@ X029e: jmp     X026e           ; 029e - 44 6e  Dn
 ;
 X02a0: jmp     X011a           ; 02a0 - 24 1a  $.
 ;
-;----------------------------------------------------------------delay-like init routine
+;----------------------------------------------------------------delay-like init routine, and after note decode
 X02a2: mov     a,r3            ; 02a2 - fb     {
        orl     a,#8            ; 02a3 - 43 08  C.
        mov     r3,a            ; 02a5 - ab     +
        mov     r1,#6           ; 02a6 - b9 06  9.
 X02a8: mov     a,#0deh         ; 02a8 - 23 de  #^
-X02aa: dec     a               ; 02aa - 07     .
-       jnz     X02aa           ; 02ab - 96 aa  .*
+       dec     a               ; 02aa - 07     .
+       jnz     $-1             ; 02ab - 96 aa  .*
        djnz    r1,X02a8        ; 02ad - e9 a8  i(
        jmp     X014d           ; 02af - 24 4d  $M
 ;-----------------------------------------------------------------
@@ -666,12 +663,12 @@ X02c2: dec     a               ; 02c2 - 07     .
 X02c6: dec     a               ; 02c6 - 07     .
        nop                     ; 02c7 - 00     .
        jnz     X02c6           ; 02c8 - 96 c6  .F
-       jmp     TMRTON          ; 02ca - 44 43  DC
+       jmp     TMRTON+1        ; 02ca - 44 43  DC
 ;
 X02cc: mov     a,#0ah          ; 02cc - 23 0a  #.
 X02ce: dec     a               ; 02ce - 07     .
        jnz     X02ce           ; 02cf - 96 ce  .N
-X02d1: jmp     X0242           ; 02d1 - 44 42  DB
+X02d1: jmp     TMRTON          ; 02d1 - 44 42  DB
 ;
 X02d3: jb2     X02d7           ; 02d3 - 52 d7  RW
        jmp     X012e           ; 02d5 - 24 2e  $.
