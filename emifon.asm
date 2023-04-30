@@ -1,9 +1,17 @@
-;
+	;
 ;  8048 Disassembly of emifon.bin
 ;  12/15/2018 19:08
 ;firmware:KR1816WE48-02 (or -2)
-;device can remember user defined sequence up to 52 notes
-;i.e. it can use 52 bytes of memory and left to systeem needs only 12 bytes, 8 registers + two stack entries
+;device can remember user defined sequence up to 54 notes
+;i.e. it can use 54 bytes of memory and left to systeem needs only 10 bytes, 8 registers + 2 bytes also
+;
+;There's NO stack (for RAM ecomomy reasons) - only jumps, no calls, no returns.
+;
+;Here should be at least 4 modes:
+;1.Playing the tune in ROM
+;2.Playing notes played on keyboard
+;3.Memorising a melody played on keyboard
+;4.Playing memorised melody from RAM
 ;
 ;music playing, sound generation routines are close similar to DOORBELL (firmware KR1816WE48-01)
 ;stored tunes format is identical
@@ -12,13 +20,21 @@
 
 ;REGISTERS:
 ;R0 - tune start address
-;R1
+;R1 - note value read from keyboard after decoding
 ;R2
-;R3 - ??used as port2 copy (see TMRTON)
-;R4 - ??user flag register
+;R3 - used as port2 copy (see TMRTON)
+;R4 - user flag register
+;     R4.0 - RAM/ROM note reading
 ;R5 - depends on musical tone
 ;R6
-;R7 - depends on tone duration         
+;R7 - depends on tone duration
+
+;PORTS:
+;P0 - not used
+;P1 - keyboard return
+;P2.0..2 - volume DAC (fade control)
+;P2.3 - tone output
+;P2.4..7 - keyboard scan
 
 ;
        org     0
@@ -31,9 +47,9 @@ X0003: outl    p2,a            ; 0003 - 3a     :
 ;
 X0008: jmp     X0203           ; 0008 - 44 03  D.
 ;
-X000a: in      a,p1            ; 000a - 09     .       ;here we, for example, after tone processing
+X000a: in      a,p1            ; 000a - 09     .       ;here we, for example, after tone processing (timer overflow)
        cpl     a               ; 000b - 37     7
-       mov     r1,a            ; 000c - a9     )
+       mov     r1,a            ; 000c - a9     )       ;R1:=inverted P1
        jf0     X0020           ; 000d - b6 20  6 
        jz      X0029           ; 000f - c6 29  F)
 X0011: cpl     f0              ; 0011 - 95     .
@@ -42,8 +58,8 @@ X0013: jb3     X0026           ; 0013 - 72 26  r&
 X0015: mov     a,r1            ; 0015 - f9     y
        anl     a,#0f0h         ; 0016 - 53 f0  Sp
        jnz     X0037           ; 0018 - 96 37  .7
-       mov     a,r1            ; 001a - f9     y
-       orl     a,#0d0h         ; 001b - 43 d0  CP      ;reading some table at 0d0h!
+       mov     a,r1            ; 001a - f9     y       ;read inverted P1
+       orl     a,#0d0h         ; 001b - 43 d0  CP      ;1101.0000 table at D0-DF, F0-FF?
        movp    a,@a            ; 001d - a3     #
        jmp     X003d           ; 001e - 04 3d  .=
 ;
@@ -61,8 +77,8 @@ X0029: mov     a,r4            ; 0029 - fc     |
        add     a,#8            ; 002d - 03 08  ..
        mov     r2,a            ; 002f - aa     *
 X0030: mov     a,#3            ; 0030 - 23 03  #.
-X0032: dec     a               ; 0032 - 07     .
-       jnz     X0032           ; 0033 - 96 32  .2
+       dec     a               ; 0032 - 07     .
+       jnz     $-1             ; 0033 - 96 32  .2
        jmp     X0041           ; 0035 - 04 41  .A
 ;
 X0037: nop                     ; 0037 - 00     .
@@ -70,7 +86,7 @@ X0037: nop                     ; 0037 - 00     .
        orl     a,#0d0h         ; 0039 - 43 d0  CP      ;reading some table at 0d0h!
        movp    a,@a            ; 003b - a3     #
        swap    a               ; 003c - 47     G
-X003d: anl     a,#0fh          ; 003d - 53 0f  S.
+X003d: anl     a,#0fh          ; 003d - 53 0f  S.      ;here we are also after 0d0 (and/or 0f0?) table reading at x0015
        add     a,r2            ; 003f - 6a     j
        mov     r2,a            ; 0040 - aa     *
 X0041: mov     a,r3            ; 0041 - fb     {
@@ -113,13 +129,11 @@ X006f: jb4     X0073           ; 006f - 92 73  .s
 ;
 X0073: jb2     X0080           ; 0073 - 52 80  R.
        jb1     X0082           ; 0075 - 32 82  2.
-X0077: nop                     ; 0077 - 00     .       ; data truncated
-;
-       org     79h
-;
+X0077: nop                     ; 0077 - 00     .
+       nop                     ; 0078 - 00     .
 X0079: mov     a,#2            ; 0079 - 23 02  #.
-X007b: dec     a               ; 007b - 07     .
-       jnz     X007b           ; 007c - 96 7b  .{
+       dec     a               ; 007b - 07     .
+       jnz     $-1             ; 007c - 96 7b  .{
 X007e: jmp     X0147           ; 007e - 24 47  $G
 ;
 X0080: jmp     X0077           ; 0080 - 04 77  .w
@@ -135,9 +149,9 @@ X0087: mov     a,r4            ; 0087 - fc     |
 X008c: jmp     X02cc           ; 008c - 44 cc  DL
 ;
 X008e: mov     a,r2            ; 008e - fa     z
-       movp    a,@a            ; 008f - a3     #
-       mov     r1,a            ; 0090 - a9     )
-       jb5     X00a0           ; 0091 - b2 a0  2 
+       movp    a,@a            ; 008f - a3     #       ;decode note from keyboard
+       mov     r1,a            ; 0090 - a9     )       ;save it to R1
+       jb5     SELMOD          ; 0091 - b2 a0  2       ;jump if it's SW1..SW3
        mov     a,r4            ; 0093 - fc     |
        jb2     X0098           ; 0094 - 52 98  R.
        jmp     X02d9           ; 0096 - 44 d9  DY
@@ -149,8 +163,9 @@ X009c: cpl     a               ; 009c - 37     7
        xrl     a,r4            ; 009d - dc     \
        jmp     X02df           ; 009e - 44 df  D_
 ;
-X00a0: jb4     X009c           ; 00a0 - 92 9c  ..
-       jb2     X00a7           ; 00a2 - 52 a7  R'
+;process switches. 21h=SW1, 20h=SW2, 24h=SW3
+SELMOD:jb4     X009c           ; 00a0 - 92 9c  ..      ;???
+       jb2     X00a7           ; 00a2 - 52 a7  R'      ;jump if SW3
        xch     a,r4            ; 00a4 - 2c     ,
        anl     a,#78h          ; 00a5 - 53 78  Sx
 X00a7: orl     a,r4            ; 00a7 - 4c     L
@@ -187,83 +202,94 @@ X00cc: mov     r1,#0eh         ; 00cc - b9 0e  9.
        org     0d0h
 ;--------------------------------------------------------------------seems to me this is table, because of code is quite insane
        db      00h             ; 00d0 - 00
-       anl     a,@r1           ; 00d1 - 51     Q
-       mov     t,a             ; 00d2 - 62     b
-       anl     a,@r1           ; 00d3 - 51     Q
-;
+       db      51h             ; 00d1 - 51     Q
+       db      62h             ; 00d2 - 62     b
+       db      51h             ; 00d3 - 51     Q
        db      73h             ; 00d4 - 73     s
-;
-       anl     a,@r1           ; 00d5 - 51     Q
-       mov     t,a             ; 00d6 - 62     b
-       anl     a,@r1           ; 00d7 - 51     Q
-       dw      5184h           ; 00d8 - 84 51  .Q
-;
-       mov     t,a             ; 00da - 62     b
-       anl     a,@r1           ; 00db - 51     Q
-;
+       db      51h             ; 00d5 - 51     Q
+       db      62h             ; 00d6 - 62     b
+       db      51h             ; 00d7 - 51     Q
+       db      84h             ; 00d8 - 84
+       db      51h             ; 00d9 - 51     .Q
+       db      62h             ; 00da - 62     b
+       db      51h             ; 00db - 51     Q
        db      73h             ; 00dc - 73     s
-;
-       anl     a,@r1           ; 00dd - 51     Q
-       mov     t,a             ; 00de - 62     b
-       anl     a,@r1           ; 00df - 51     Q
-       mov     r7,#6           ; 00e0 - bf 06  ?.
-       dec     a               ; 00e2 - 07     .
-       ins     a,bus           ; 00e3 - 08     .
-       in      a,p1            ; 00e4 - 09     .
-       movd    a,p4            ; 00e5 - 0c     .
-;
-       db      0bh             ; 00e6 - 0b     .
-;
-       in      a,p2            ; 00e7 - 0a     .
-       inc     r1              ; 00e8 - 19     .
-       en      i               ; 00e9 - 05     .
-       jmp     X0003           ; 00ea - 04 03  ..
-;
-       outl    bus,a           ; 00ec - 02     .
-       inc     r2              ; 00ed - 1a     .
-       inc     r3              ; 00ee - 1b     .
-       db      01h             ; 00ef - 01     .---------------------insane code again, table continues here!
-       movd    a,p5            ; 00f0 - 0d     .
-       movd    a,p6            ; 00f1 - 0e     .
-       movd    a,p7            ; 00f2 - 0f     .
-       xch     a,@r1           ; 00f3 - 21     !
-       xch     a,@r0           ; 00f4 - 20      
-       inc     @r0             ; 00f5 - 10     .
-       inc     r4              ; 00f6 - 1c     .
-       jmp     X0118           ; 00f7 - 24 18  $.
-;
-       inc     a               ; 00f9 - 17     .
-       jtf     X0015           ; 00fa - 16 15  ..
-       call    X0011           ; 00fc - 14 11  ..
-       dw      1312h           ; 00fe - 12 13  ..
-;--------------------------------------------------------------------end of table (?)
+       db      51h             ; 00dd - 51     Q
+       db      62h             ; 00de - 62     b
+       db      51h             ; 00df - 51     Q
+
+;note decoding table in P1
+;table for P2.5
+       db      0bfh            ; 00e0 - bf             ;P1.0= (undefined)
+       db      06h                      06  ?.         ;P1.1=1.F
+       db      07h             ; 00e2 - 07     .       ;P1.2=1.F#
+       db      08h             ; 00e3 - 08     .       ;P1.3=1.G
+       db      09h             ; 00e4 - 09     .       ;P1.4=1.G#
+       db      0ch             ; 00e5 - 0c     .       ;P1.5=1.H
+       db      0bh             ; 00e6 - 0b     .       ;P1.6=1.A#
+       db      0ah             ; 00e7 - 0a     .       ;P1.7=1.A
+
+;table for P2.6
+       db      19h             ; 00e8 - 19     .       ;P1.0= (undefined),2.G#
+       db      05h             ; 00e9 - 05     .       ;P1.1=1.E
+       db      04h             ; 00ea - 04             ;P1.2=1.D#
+       db      03h                      03  ..         ;P1.3=1.D
+       db      02h             ; 00ec - 02     .       ;P1.4=1.C#
+       db      1ah             ; 00ed - 1a     .       ;P1.5= (undefined),2.A
+       db      1bh             ; 00ee - 1b     .       ;P1.6= (undefined),2.A#
+       db      01h             ; 00ef - 01     .       ;P1.7=1.C
+
+;table for P2.7
+       db      0dh             ; 00f0 - 0d     .       ;P1.0=0.la
+       db      0eh             ; 00f1 - 0e     .       ;P1.1=0.la#
+       db      0fh             ; 00f2 - 0f     .       ;P1.2=0.si
+       db      21h             ; 00f3 - 21     !       ;P1.3= SW1
+       db      20h             ; 00f4 - 20             ;P1.4= SW2
+       db      10h             ; 00f5 - 10     .       ;P1.5= (undefined),pause
+       db      1ch             ; 00f6 - 1c     .       ;P1.6= (undefined),2.H
+       db      24h             ; 00f7 - 24             ;P1.7= SW3
+
+;table for P2.4
+       db      18h             ; 00f8 - 18  $.         ;P1.0=2.sol
+       db      17h             ; 00f9 - 17     .       ;P1.1=2.F#
+       db      16h             ; 00fa - 16             ;P1.2=2.F
+       db      15h             ; 00fb - 15  ..         ;P1.3=2.E
+       db      14h             ; 00fc - 14             ;P1.4=2.D#
+       db      11h             ; 00fd - 11  ..         ;P1.5=2.C
+       db      12h             ; 00fe - 12             ;P1.6=2.C#
+       db      13h             ; 00ff - 13  ..         ;P1.7=2.D
+;--------------------------------------------------------------------end of tables
 
 X0100: mov     a,r1            ; 0100 - f9     y
-       orl     a,#0e0h         ; 0101 - 43 e0  C`      ;start address of note=1e0+r1 (remember that we'ra at 1st page)
+       orl     a,#TUNETAB mod 100h      ; 0101 - 43 e0  C`      ;start address of note=1e0+r1
        movp    a,@a            ; 0103 - a3     #
-       mov     r0,a            ; 0104 - a8     (
+       mov     r0,a            ; 0104 - a8     (       ;r0=tune start addr
        mov     a,#10h          ; 0105 - 23 10  #.      
-       xrl     a,r4            ; 0107 - dc     \       ;r4 XOR 0001.0000
-       orl     a,#20h          ; 0108 - 43 20  C       ;a OR   0010.0000
+       xrl     a,r4            ; 0107 - dc     \       ;r4 XOR 0001.0000 - invert bit 4
+       orl     a,#20h          ; 0108 - 43 20  C       ;a OR   0010.0000 - set bit 5
        mov     r4,a            ; 010a - ac     ,
-       jb4     X0111           ; 010b - 92 11  ..
+       jb4     NOTE1           ; 010b - 92 11  ..      ;read the 1st note
        jmp     X0272           ; 010d - 44 72  Dr
 ;
-X010f: inc     r0              ; 010f - 18     .
-       mov     a,r4            ; 0110 - fc     |
-X0111: jb0     X0116           ; 0111 - 12 16  ..
-X0113: mov     a,@r0           ; 0113 - f0     p
-       jmp     X0118           ; 0114 - 24 18  $.
-;
-;------------------------next note of tune reading (same as RD_PG3 in DOORBELL)
+;------------------------next note of tune reading
 ;r0 contains address of note
-;tune array is located at 3rd page 300h-3ffh
-X0116: mov     a,r0            ; 0116 - f8     x
-       movp3   a,@a            ; 0117 - e3     c
-X0118: jz      X012c           ; 0118 - c6 2c  F,      ;x012c - end of playing (after reading 0)
+NXNOTE:inc     r0              ; 010f - 18     .       ;next note addr
+       mov     a,r4            ; 0110 - fc     |
+NOTE1: jb0     ROMTU           ; 0111 - 12 16  ..      ;r4.0=1 - ROM, r4.0=0 - RAM
+X0113: mov     a,@r0           ; 0113 - f0     p       ;read from RAM
+       jmp     ENDCHK          ; 0114 - 24 18  $.
+ROMTU: mov     a,r0            ; 0116 - f8     x
+       movp3   a,@a            ; 0117 - e3     c       ;read from ROM, tune array is located at 3rd page 300h-3ffh
+ENDCHK:jz      X012c           ; 0118 - c6 2c  F,      ;x012c - end of playing (after reading 0)
 
 ;--------------------------note code parser (same as PG2GET in DOORBELL)
-X011a: mov     r1,a            ; 011a - a9     )
+;input:
+;r1=note code from table
+;return:
+;R5=note pitch
+;R7=duration
+NOTEPARSE: 
+       mov     r1,a            ; 011a - a9     )
        anl     a,#1fh          ; 011b - 53 1f  S.
        orl     a,#TONETAB mod 100h      ; 011d - 43 c0  C@
        movp    a,@a            ; 011f - a3     #
@@ -275,13 +301,14 @@ X011a: mov     r1,a            ; 011a - a9     )
        add     a,#DURADDR mod 100h      ; 0126 - 03 78  .x
        movp    a,@a            ; 0128 - a3     #
        mov     r7,a            ; 0129 - af     /
-       jmp     X02a2           ; 012a - 44 a2  D"      ;return to x014d
+       jmp     DELAY1          ; 012a - 44 a2  D"      ;set bit 4 in r3, delay and goto x014d
 ;
-;(x02a2 is something like DELAY in DOORBELL and after it jumps to X014d)
+;(DELAY1 is something like DELAY in DOORBELL and after it jumps to X014d)
 ;
 X012c: jmp     X0290           ; 012c - 44 90  D.
-;
-X012e: mov     r7,#83h         ; 012e - bf 83  ?.
+
+;playing a note from keyboard (????)
+X012e: mov     r7,#DURFREE mod 100h     ; 012e - bf 83  ?.
        mov     r6,#80h         ; 0130 - be 80  >.
        mov     a,r4            ; 0132 - fc     |
        jb1     X0145           ; 0133 - 32 45  2E
@@ -289,48 +316,51 @@ X012e: mov     r7,#83h         ; 012e - bf 83  ?.
        mov     r0,#9           ; 0137 - b8 09  8.
 X0139: orl     a,#30h          ; 0139 - 43 30  C0
        mov     r4,a            ; 013b - ac     ,
-       mov     a,r1            ; 013c - f9     y
-       mov     @r0,a           ; 013d - a0      
-X013e: orl     a,#0c0h         ; 013e - 43 c0  C@
+       mov     a,r1            ; 013c - f9     y       ;read note code from keyboard
+       mov     @r0,a           ; 013d - a0             ;store note code (?) or back it up @9h
+X013e: orl     a,#TONETAB mod 100h      ; 013e - 43 c0  C@
        movp    a,@a            ; 0140 - a3     #
        mov     r5,a            ; 0141 - ad     -
        nop                     ; 0142 - 00     .
-       jmp     X02a2           ; 0143 - 44 a2  D"
+       jmp     DELAY1          ; 0143 - 44 a2  D"      ;DELAY1 and goto x014d
 ;
 X0145: jmp     X02b1           ; 0145 - 44 b1  D1
 ;
 X0147: mov     r1,#8           ; 0147 - b9 08  9.
-       mov     a,@r1           ; 0149 - f1     q
-       jnz     X0164           ; 014a - 96 64  .d
-       inc     r7              ; 014c - 1f     .
-X014d: mov     a,r7            ; 014d - ff     .       ;here we after x02a2 delay after note parse
+       mov     a,@r1           ; 0149 - f1     q       ;recall bits 4..0 of duration value
+       jnz     JDURLOOP        ; 014a - 96 64  .d      
+       inc     r7              ; 014c - 1f     .       ;if bits are 0, prepare addr for the next byte of duration table
+
+X014d: mov     a,r7            ; 014d - ff     .       ;here we also after DELAY1 delay after note parse
        movp    a,@a            ; 014e - a3     #       ;read next duration table value
 X014f: jz      X0166           ; 014f - c6 66  Ff      ;next note if 0
        mov     r1,a            ; 0151 - a9     )       ;backup
        rr      a               ; 0152 - 77     w
        swap    a               ; 0153 - 47     G       
-       anl     a,#7            ; 0154 - 53 07  S.      ;put bits 7,6,5 of duration value to 2,1,0
-       xch     a,r3            ; 0156 - 2b     +
-       anl     a,#0f8h         ; 0157 - 53 f8  Sx
-       orl     a,r3            ; 0159 - 4b     K
-       mov     r3,a            ; 015a - ab     +
+       anl     a,#7            ; 0154 - 53 07  S.      ;put bits 7,6,5 of vol-duration value to 2,1,0
+       xch     a,r3            ; 0156 - 2b     +       ;r3:=3 high bits of vol-dur.value in 2,1,0, a:=old r3
+       anl     a,#0f8h         ; 0157 - 53 f8  Sx      ;clear bit 3 in old r3 (tone out)
+       orl     a,r3            ; 0159 - 4b     K       
+       mov     r3,a            ; 015a - ab     +       ;r3:=old r3 OR bits 2,1,0 = vol.value
        mov     a,r1            ; 015b - f9     y       ;restore
        anl     a,#1fh          ; 015c - 53 1f  S.      ;bits 4..0 of duration value
        mov     r1,#8           ; 015e - b9 08  9.
        mov     @r1,a           ; 0160 - a1     !       ;store it in RAM @r0 of register bank 1 (@08h)
        clr     f1              ; 0161 - a5     %
-       jmp     X02d1           ; 0162 - 44 d1  DQ      ;jump to tome player (TMRTON) @0243
+       jmp     JTMRTON         ; 0162 - 44 d1  DQ      ;jump to tone player (TMRTON)
 ;
-X0164: jmp     X02c2           ; 0164 - 44 c2  DB
+JDURLOOP:
+       jmp     DURLOOP         ; 0164 - 44 c2  DB      ;if bits 4..0 of duration table nonzero
 ;
+;next note (duration table ended)
 X0166: mov     a,r4            ; 0166 - fc     |
        jb2     X016b           ; 0167 - 52 6b  Rk
        jb1     X0172           ; 0169 - 32 72  2r
 X016b: mov     a,r3            ; 016b - fb     {
        anl     a,#0f0h         ; 016c - 53 f0  Sp
        mov     r3,a            ; 016e - ab     +
-       outl    p2,a            ; 016f - 3a     :
-       jmp     X010f           ; 0170 - 24 0f  $.
+       outl    p2,a            ; 016f - 3a     :       ;switch volume and tone output off 
+       jmp     NXNOTE          ; 0170 - 24 0f  $.      ;process the next note
 ;
 X0172: jmp     X0200           ; 0172 - 44 00  D.
        db      0,0,0,0
@@ -348,11 +378,17 @@ DURADDR:
        db      DUR7 mod 100h   ; 017f - b8     08
 
 ;---------------------------------------duration tables below are different from DOORBELL values
+;format: bits 7,6,5 - output to volume DAC
+;        bits 4..0  - duration of current volume level
+;in comparison with DOORBELL, volume and duration info is interchanged (another nibbles) and shifted
 ;---------------------------------------duration table for 80h
 DUR0:
        db      0e3h            ; 0180 - e3     c
        db      23h
-       db      00h             ; 0181 - 23 00  #.      ;???? it will lead to stop reading duration info
+       db      00h             ; 0181 - 23 00  #.
+
+;---------------------------------------duration table for free-playing from keys
+DURFREE:
        db      0c7h            ; 0183 - c7     G
        db      0a7h            ; 0184 - a7     '
        db      87h             ; 0185 - 87     .
@@ -481,7 +517,7 @@ TONETAB:
 ;note code is the same as stores in tune data, the same as table at 01c0h and in DOORBELL
 ;only 6 first left black keys turn tunes on
 ;don't undesrtand value at offset 00h, this note was undefined in doorbell
-                                                       ;offset----note--------tune
+TUNETAB:                                               ;offset----note--------tune
        in      a,p1            ; 01e0 - 09     .       ;00h-----------------------------------------?????unknown note????----????not a tune address???
        db      TUNE0 mod 100h  ; 01e1 - 00             ;01h    - 1.do  - beep
        db      TUNE2 mod 100h  ; 01e2 - 20  .          ;02h    - 1.do# - Ya na solnyshke lezhu
@@ -494,16 +530,15 @@ TONETAB:
        db      TUNE5 mod 100h  ; 01e9 - 89  ..         ;09h    - 1.sol#- Vmeste veselo shagat
        db      TUNE0 mod 100h  ; 01ea - 00             ;0ah    - 1.la  - beep
        db      TUNE6 mod 100h  ; 01eb - b1  .1         ;0bh    - 1.la# - Bremenskiye muzykanty
-                                                       ;       - 1.si, 0.la -beep
-org    1eeh                                            ;
+       db      TUNE0 mod 100h  ; 01ec - 00             ;       - 1.si  - beep
+       db      TUNE0 mod 100h  ; 01ed - 00             ;       - 0.la  - beep
        db      TUNE1 mod 100h  ; 01ee - 02     .       ;0eh    - 0.la# - Krylatye kacheli   (this is left-most black key, 1st tune, but last table entry!)
-                                                       ;       - 0.si and all notes in 2nd octave are beeps (00h)
+       db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0       ;       - 0.si and all notes in 2nd octave are beeps (00h)
 
-       db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 ;-------------------------------------------------------------------------
 ;
        org     200h
-;
+;-----------------------------------------------------code the duration of memorised note, by r6 value (???)
 X0200: anl     a,#0efh         ; 0200 - 53 ef  So
        mov     r4,a            ; 0202 - ac     ,
 X0203: mov     a,r3            ; 0203 - fb     {
@@ -511,47 +546,43 @@ X0203: mov     a,r3            ; 0203 - fb     {
        mov     r3,a            ; 0206 - ab     +
        outl    p2,a            ; 0207 - 3a     :
        mov     a,r0            ; 0208 - f8     x
-       orl     a,#0c0h         ; 0209 - 43 c0  C@
-       cpl     a               ; 020b - 37     7
-       jz      X023a           ; 020c - c6 3a  F:
-       inc     r0              ; 020e - 18     .
-       mov     @r0,#0          ; 020f - b0 00  0.
+       orl     a,#0c0h         ; 0209 - 43 c0  C@      ;11xx.xxxx
+       cpl     a               ; 020b - 37     7       ;00xx.xxxx
+       jz      X023a           ; 020c - c6 3a  F:      ;jump if r0 was xx11.1111
+       inc     r0              ; 020e - 18     .       
+       mov     @r0,#0          ; 020f - b0 00  0.      ;clear next RAM addr
        dec     r0              ; 0211 - c8     H
        mov     r5,#0           ; 0212 - bd 00  =.
-       mov     a,r6            ; 0214 - fe     ~
+       mov     a,r6            ; 0214 - fe     ~       
        cpl     a               ; 0215 - 37     7
-       jb6     X0220           ; 0216 - d2 20  R 
-       jb5     X0224           ; 0218 - b2 24  2$
-       jb4     X0228           ; 021a - 92 28  .(
-       jb3     X0232           ; 021c - 72 32  r2
-       jmp     X0233           ; 021e - 44 33  D3
-;
-X0220: jb5     X022c           ; 0220 - b2 2c  2,
-       jmp     X022d           ; 0222 - 44 2d  D-
-;
-X0224: jb4     X022e           ; 0224 - 92 2e  ..
-       jmp     X022f           ; 0226 - 44 2f  D/
-;
-X0228: jb3     X0230           ; 0228 - 72 30  r0
-       jmp     X0231           ; 022a - 44 31  D1
-;
-X022c: inc     r5              ; 022c - 1d     .
-X022d: inc     r5              ; 022d - 1d     .
-X022e: inc     r5              ; 022e - 1d     .
-X022f: inc     r5              ; 022f - 1d     .
-X0230: inc     r5              ; 0230 - 1d     .
-X0231: inc     r5              ; 0231 - 1d     .
-X0232: inc     r5              ; 0232 - 1d     .
-X0233: mov     a,r5            ; 0233 - fd     }
+       jb6     BIT65           ; 0216 - d2 20  R 
+       jb5     BIT54           ; 0218 - b2 24  2$
+       jb4     BIT43           ; 021a - 92 28  .(
+       jb3     SET1            ; 021c - 72 32  r2
+       jmp     SET0            ; 021e - 44 33  D3
+BIT65: jb5     SET7            ; 0220 - b2 2c  2,
+       jmp     SET6            ; 0222 - 44 2d  D-
+BIT54: jb4     SET5            ; 0224 - 92 2e  ..
+       jmp     SET4            ; 0226 - 44 2f  D/
+BIT43: jb3     SET3            ; 0228 - 72 30  r0
+       jmp     SET2            ; 022a - 44 31  D1
+SET7:  inc     r5              ; 022c - 1d     .       ;r6.(6..3)=00xx, dur=7
+SET6:  inc     r5              ; 022d - 1d     .       ;r6.(6..3)=01xx, dur=6
+SET5:  inc     r5              ; 022e - 1d     .       ;r6.(6..3)=100x, dur=5
+SET4:  inc     r5              ; 022f - 1d     .       ;r6.(6..3)=101x, dur=4
+SET3:  inc     r5              ; 0230 - 1d     .       ;r6.(6..3)=1100, dur=3
+SET2:  inc     r5              ; 0231 - 1d     .       ;r6.(6..3)=1101, dur=2
+SET1:  inc     r5              ; 0232 - 1d     .       ;r6.(6..3)=1110, dur=1
+SET0:  mov     a,r5            ; 0233 - fd     }       ;r6.(6..3)=1111, dur=0
        rl      a               ; 0234 - e7     g
-       swap    a               ; 0235 - 47     G
+       swap    a               ; 0235 - 47     G       ;set bits 7-5 (duration of note) by value of bits 6-3 of r6
        mov     r5,a            ; 0236 - ad     -
-       mov     a,@r0           ; 0237 - f0     p
+       mov     a,@r0           ; 0237 - f0     p       
        orl     a,r5            ; 0238 - 4d     M
-       mov     @r0,a           ; 0239 - a0      
+       mov     @r0,a           ; 0239 - a0             ;update these bits in RAM value @r0
 X023a: mov     a,r4            ; 023a - fc     |
        jb4     X02d3           ; 023b - 92 d3  .S
-       jmp     X0277           ; 023d - 44 77  Dw
+       jmp     DELAY2          ; 023d - 44 77  Dw      ;jump to x000a after delay
 ;
        org     242h
 ;-----------------------------------------------------------
@@ -560,26 +591,27 @@ X023a: mov     a,r4            ; 023a - fc     |
 ;------------but little bit DIFFERENT! from 024d.
 ;------------namely, don't read port but use R3
 ;------------algorithm is quite the same.
+;on call,r5- tone (from TONETAB)
 TMRTON:nop                     ; 0242 - 00     .
        mov     a,#5dh          ; 0243 - 23 5d  #]
        mov     t,a             ; 0245 - 62     b
        strt    t               ; 0246 - 55     U
 TONE:  mov     a,r5            ; 0247 - fd     }
        jz      MUSPAUSE        ; 0248 - c6 5b  F[
-TONLP: dec     a               ; 024a - 07     .
-       jnz     TONLP           ; 024b - 96 4a  .J
+       dec     a               ; 024a - 07     .
+       jnz     $-1             ; 024b - 96 4a  .J
        mov     a,#8            ; 024d - 23 08  #.
        xrl     a,r3            ; 024f - db     [       ;invert bit 3 in r3
 TMRCHK:mov     r3,a            ; 0250 - ab     +
        outl    p2,a            ; 0251 - 3a     :       ;output r3 to port 2 (with inverted bit 3 if it isn't pause)
        jtf     X0260           ; 0252 - 16 60  .`      ;leave tone player after timer overflow
        mov     a,#23h          ; 0254 - 23 23  ##
-LOWLP: dec     a               ; 0256 - 07     .
-       jnz     LOWLP           ; 0257 - 96 56  .V
+       dec     a               ; 0256 - 07     .
+       jnz     $-1             ; 0257 - 96 56  .V
        jmp     TONE            ; 0259 - 44 47  DG
 MUSPAUSE:
        mov     a,r3            ; 025b - fb     {
-       anl     a,#0f7h         ; 025c - 53 f7  Sw
+       anl     a,#0f7h         ; 025c - 53 f7  Sw      ;set bit 3 to 0 if pause
        jmp     TMRCHK          ; 025e - 44 50  DP
 ;----------------------------------------------------------------
 
@@ -598,11 +630,11 @@ X0272: mov     a,r3            ; 0272 - fb     {
        anl     a,#0f0h         ; 0273 - 53 f0  Sp
        mov     r3,a            ; 0275 - ab     +
        outl    p2,a            ; 0276 - 3a     :
-X0277: mov     r1,#3           ; 0277 - b9 03  9.
-X0279: mov     a,#0feh         ; 0279 - 23 fe  #~
-X027b: dec     a               ; 027b - 07     .
-       jnz     X027b           ; 027c - 96 7b  .{
-       djnz    r1,X0279        ; 027e - e9 79  iy
+DELAY2:mov     r1,#3           ; 0277 - b9 03  9.      ;two-loop delay
+DELOP2:mov     a,#0feh         ; 0279 - 23 fe  #~
+       dec     a               ; 027b - 07     .
+       jnz     $-1             ; 027c - 96 7b  .{
+       djnz    r1,DELOP2       ; 027e - e9 79  iy
        jmp     X000a           ; 0280 - 04 0a  ..
 ;
 X0282: mov     a,r3            ; 0282 - fb     {
@@ -626,20 +658,21 @@ X0295: jb2     X0299           ; 0295 - 52 99  R.
 X0299: inc     r0              ; 0299 - 18     .
        mov     a,r0            ; 029a - f8     x
        movp3   a,@a            ; 029b - e3     c
-       jnz     X02a0           ; 029c - 96 a0  . 
+       jnz     JNOTEPARSE      ; 029c - 96 a0  . 
 X029e: jmp     X026e           ; 029e - 44 6e  Dn
 ;
-X02a0: jmp     X011a           ; 02a0 - 24 1a  $.
+JNOTEPARSE: 
+       jmp     NOTEPARSE       ; 02a0 - 24 1a  $.
 ;
 ;----------------------------------------------------------------delay-like init routine, and after note decode
-X02a2: mov     a,r3            ; 02a2 - fb     {
+DELAY1:mov     a,r3            ; 02a2 - fb     {
        orl     a,#8            ; 02a3 - 43 08  C.
-       mov     r3,a            ; 02a5 - ab     +
+       mov     r3,a            ; 02a5 - ab     +       ;set bit 4 in R3
        mov     r1,#6           ; 02a6 - b9 06  9.
-X02a8: mov     a,#0deh         ; 02a8 - 23 de  #^
+DELOOP:mov     a,#0deh         ; 02a8 - 23 de  #^      ;delay
        dec     a               ; 02aa - 07     .
        jnz     $-1             ; 02ab - 96 aa  .*
-       djnz    r1,X02a8        ; 02ad - e9 a8  i(
+       djnz    r1,DELOOP       ; 02ad - e9 a8  i(
        jmp     X014d           ; 02af - 24 4d  $M
 ;-----------------------------------------------------------------
 ;
@@ -657,18 +690,20 @@ X02bb: mov     a,r4            ; 02bb - fc     |
        mov     a,r1            ; 02bf - f9     y
        jmp     X013e           ; 02c0 - 24 3e  $>
 ;
-X02c2: dec     a               ; 02c2 - 07     .
-       mov     @r1,a           ; 02c3 - a1     !
+;if bits 4..0 of duration table is nonzero
+DURLOOP:
+       dec     a               ; 02c2 - 07     .
+       mov     @r1,a           ; 02c3 - a1     !       ;countdown duration table value @08h
        mov     a,#5            ; 02c4 - 23 05  #.
-X02c6: dec     a               ; 02c6 - 07     .
+       dec     a               ; 02c6 - 07     .
        nop                     ; 02c7 - 00     .
-       jnz     X02c6           ; 02c8 - 96 c6  .F
-       jmp     TMRTON+1        ; 02ca - 44 43  DC
+       jnz     $-2             ; 02c8 - 96 c6  .F      ;fixed-time loop
+       jmp     TMRTON+1        ; 02ca - 44 43  DC      ;return to tone generation
 ;
 X02cc: mov     a,#0ah          ; 02cc - 23 0a  #.
-X02ce: dec     a               ; 02ce - 07     .
-       jnz     X02ce           ; 02cf - 96 ce  .N
-X02d1: jmp     TMRTON          ; 02d1 - 44 42  DB
+       dec     a               ; 02ce - 07     .
+       jnz     $-1             ; 02cf - 96 ce  .N
+JTMRTON: jmp     TMRTON          ; 02d1 - 44 42  DB
 ;
 X02d3: jb2     X02d7           ; 02d3 - 52 d7  RW
        jmp     X012e           ; 02d5 - 24 2e  $.
